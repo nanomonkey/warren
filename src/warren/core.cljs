@@ -7,41 +7,29 @@
 (defonce board-size [30 20])
 (defonce initial-position [2 2])
 
-(defn blank-board [i j]
-  (vec (repeat j (vec (repeat i "0")))))
-
-(defn add-to-board [board char x y]
-  (update board x #(str char %)))
-
-(defn new-board [i j]
-  (let [b (new-board i j)]
-    (for [x (range (first  board-size))
-          y (range (second  board-size))]
-      (if (== x 0) (add-to-board b "n" x y)))))
-
-(defn new-board2 [i j]
-  (let [b (new-board i j)]
-    (for [x (range (first  board-size))
-          y (range (second  board-size))]
-      (do
-        (if (== x 0) (add-to-board b "n" i j))
-        (if (== y 0) (add-to-board b "w" i j))
-        (if (== x (first board-size)) (add-to-board b "s" i j))
-        (if (== y (second board-size)) (add-to-board b "e" i j))))))
-
+(defn blank-board [x y]
+  (vec (repeat x (vec (repeat y "0")))))
 
 (defonce state (atom {:text "Welcome to Warren"
                       :board (apply blank-board board-size)
-                      ;;:position (zipmap [:x :y] initial-position)
                       :x (first initial-position)
                       :y (second initial-position)}))
 
+(defn add-to-cell [char x y]
+  (update-in state [:board y x] #(str char get-in state [:board y x])))
+
+
+(defn create-walls []
+  (for [x (range (first  board-size))
+        y (range (second  board-size))]
+    (do  
+      (if (== x 0) (add-to-cell "n" x y))
+      (if (== y 0) (add-to-cell "w" x y))
+      (if (== x (first board-size)) (add-to-cell "s" x y))
+      (if (== y (second board-size)) (add-to-cell "e" x y)))))
+
 (defn can-move? [x y direction]
-  (and (>= x 0) 
-       (<= x (first board-size))
-       (>= y 0)
-       (<= y (second board-size))
-       (not (str/includes? (get-in @state [:board x y]) direction))))
+  (not (str/includes? (get-in @state [:board x y]) direction)))
 
 (defn move-character! [direction]
   (let [x (:x @state)
@@ -154,12 +142,13 @@
  
 (defn on-js-reload []
   (println "Reloading world.")
-  ;(reset! @state)
+  ;(reset! state)
   (reagent/render-component [warren]
                             (. js/document (getElementById "app"))))
 
 (defn init []
   (on-js-reload)
+  (create-walls)
   (.addEventListener js/document "keydown" handle-keys!))
 
 (defonce start

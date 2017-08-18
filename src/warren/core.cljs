@@ -4,13 +4,34 @@
 
 (enable-console-print!) 
 
-(defn new-board [i j]
-  (vec (repeat j (vec (repeat i "0")))))
-  
 (defonce board-size [30 20])
 (defonce initial-position [2 2])
+
+(defn blank-board [i j]
+  (vec (repeat j (vec (repeat i "0")))))
+
+(defn add-to-board [board char x y]
+  (update board x #(str char %)))
+
+(defn new-board [i j]
+  (let [b (new-board i j)]
+    (for [x (range (first  board-size))
+          y (range (second  board-size))]
+      (if (== x 0) (add-to-board b "n" x y)))))
+
+(defn new-board2 [i j]
+  (let [b (new-board i j)]
+    (for [x (range (first  board-size))
+          y (range (second  board-size))]
+      (do
+        (if (== x 0) (add-to-board b "n" i j))
+        (if (== y 0) (add-to-board b "w" i j))
+        (if (== x (first board-size)) (add-to-board b "s" i j))
+        (if (== y (second board-size)) (add-to-board b "e" i j))))))
+
+
 (defonce state (atom {:text "Welcome to Warren"
-                      :board (apply new-board board-size)
+                      :board (apply blank-board board-size)
                       ;;:position (zipmap [:x :y] initial-position)
                       :x (first initial-position)
                       :y (second initial-position)}))
@@ -130,14 +151,16 @@
           j (range (second  board-size))]
       (tile i j)))])
 
-
-(reagent/render-component [warren]
-                          (. js/document (getElementById "app")))
-
-(defonce init
-  (.addEventListener js/window "keydown" #(handle-keys! %)))
-
-(defn on-js-reload []
-  (prn (:board @state)))
-
  
+(defn on-js-reload []
+  (println "Reloading world.")
+  ;(reset! @state)
+  (reagent/render-component [warren]
+                            (. js/document (getElementById "app"))))
+
+(defn init []
+  (on-js-reload)
+  (.addEventListener js/document "keydown" handle-keys!))
+
+(defonce start
+  (init))

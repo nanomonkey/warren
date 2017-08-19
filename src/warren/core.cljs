@@ -16,8 +16,12 @@
                       :y (second initial-position)}))
 
 (defn add-to-cell [char x y]
-  (swap! state update-in [:board x y] 
+  (swap! state assoc-in [:board x y] 
          #(str char get-in state [:board x y])))
+
+(defn remove-from-cell [char x y]
+  (swap! state assoc-in [:board x y]
+         (str/join (str/split (get-in state [:board x y]) char))))
 
 (defn create-walls []
   (for [x (range (first  board-size))

@@ -16,8 +16,8 @@
                       :y (second initial-position)}))
 
 (defn add-to-cell [char x y]
-  (update-in state [:board y x] #(str char get-in state [:board y x])))
-
+  (swap! state update-in [:board x y] 
+         #(str char get-in state [:board x y])))
 
 (defn create-walls []
   (for [x (range (first  board-size))

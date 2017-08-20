@@ -8,7 +8,7 @@
 (defonce initial-position [2 2])
 
 (defn blank-board [x y]
-  (vec (repeat x (vec (repeat y "0")))))
+  (vec (repeat x (vec (repeat y "nsew")))))
 
 (defonce state (atom {:text "Welcome to Warren"
                       :board (apply blank-board board-size)
@@ -17,20 +17,31 @@
 
 (defn add-to-cell [char x y]
   (swap! state assoc-in [:board x y] 
-         #(str char get-in state [:board x y])))
+         (str char (get-in @state [:board x y]))))
 
 (defn remove-from-cell [char x y]
   (swap! state assoc-in [:board x y]
-         (str/join (str/split (get-in state [:board x y]) char))))
+         (str/join (str/split (get-in @state [:board x y]) char))))
 
-(defn create-walls []
-  (for [x (range (first  board-size))
-        y (range (second  board-size))]
-    (do  
-      (if (== x 0) (add-to-cell "n" x y))
-      (if (== y 0) (add-to-cell "w" x y))
-      (if (== x (first board-size)) (add-to-cell "s" x y))
-      (if (== y (second board-size)) (add-to-cell "e" x y)))))
+(defn remove-wall [dir x y]
+  (remove-from-cell dir x y)
+  (case dir
+    "n" (remove-from-cell "s" x (+ y 1))
+    "s" (remove-from-cell "n" x (- y 1))
+    "e" (remove-from-cell "w" (+ x 1) y)
+    "w" (remove-from-cell "e" (- x 1) y)))
+
+(defn valid-unvisited-cell? [x y]
+  (and
+    (<= 0 y (- (second board-size) 1))
+    (<= 0 x (- (first board-size) 1))
+    (= "nsew" (get-in @state [:board x y])))) 
+
+(defn create-maze [x, y]
+  (let [start [(rand-int (first board-size)) 
+               (rand-int (second board-size))]
+        path []]
+    (print start)))
 
 (defn can-move? [x y direction]
   (not (str/includes? (get-in @state [:board x y]) direction)))
@@ -48,13 +59,13 @@
 (defn handle-keys! [event]
   (let [key (.-keyCode event)]
     (case key
-          32 (println "spacebar")                            ; spacebar
-          13 (println "enter")                               ; enter
-          37 (move-character! "w")
-          38 (move-character! "n")
-          39 (move-character! "e")
-          40 (move-character! "s")
-          (println key))))
+        32 (println "spacebar")         ; spacebar
+        13 (println "enter")            ; enter
+        37 (move-character! "w")
+        38 (move-character! "n")
+        39 (move-character! "e")
+        40 (move-character! "s")
+        (println key))))
 
 (defn circle [x y]
   [:circle
@@ -84,16 +95,16 @@
 (defn border-right [x y]
   [:line {:stroke "black"
           :stroke-width 0.1
-          :x1 x
-          :x2 x 
+          :x1 (+ x 1)
+          :x2 (+ x 1) 
           :y1 y
           :y2 (+ y 1)}])
 
 (defn border-left [x y]
   [:line {:stroke "black"
           :stroke-width 0.1
-          :x1 (+  x 1) 
-          :x2 (+  x 1) 
+          :x1 x
+          :x2 x 
           :y1 y
           :y2 (+  y 1)}])
 
@@ -152,7 +163,7 @@
 
 (defn init []
   (on-js-reload)
-  (create-walls)
+  (create-maze)
   (.addEventListener js/document "keydown" handle-keys!))
 
 (defonce start

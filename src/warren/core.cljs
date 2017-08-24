@@ -51,7 +51,7 @@
 (def directions ["n" "s" "e" "w"])
 
 (defn carve-maze-from [x y]
-  (println "carving from " x y)
+  "Carve out walls for maze using recursive backtracking algorithm"
   (doall 
    (for [direction (clojure.core/shuffle directions)
          :let [[new_x new_y] (next-cell direction x y)]

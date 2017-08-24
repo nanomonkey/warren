@@ -25,8 +25,8 @@
 
 (defn next-cell [dir x y]
   (case dir
-    "n" [x (+ y 1)]
-    "s" [x (- y 1)]
+    "s" [x (+ y 1)]
+    "n" [x (- y 1)]
     "e" [(+ x 1) y]
     "w" [(- x 1) y]))
 

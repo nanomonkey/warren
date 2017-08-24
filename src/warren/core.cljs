@@ -23,25 +23,42 @@
   (swap! state assoc-in [:board x y]
          (str/join (str/split (get-in @state [:board x y]) char))))
 
+(defn next-cell [dir x y]
+  (case dir
+    "n" [x (+ y 1)]
+    "s" [x (- y 1)]
+    "e" [(+ x 1) y]
+    "w" [(- x 1) y]))
+
+(defn opposite-dir [dir]
+  (case dir
+    "n" "s"
+    "s" "n"
+    "w" "e"
+    "e" "w"))
+
 (defn remove-wall [dir x y]
   (remove-from-cell dir x y)
-  (case dir
-    "n" (remove-from-cell "s" x (+ y 1))
-    "s" (remove-from-cell "n" x (- y 1))
-    "e" (remove-from-cell "w" (+ x 1) y)
-    "w" (remove-from-cell "e" (- x 1) y)))
+  (let [[nx ny] (next-cell dir x y)]
+    (remove-from-cell (opposite-dir dir) nx ny)))
 
 (defn valid-unvisited-cell? [x y]
   (and
-    (<= 0 y (- (second board-size) 1))
-    (<= 0 x (- (first board-size) 1))
-    (= "nsew" (get-in @state [:board x y])))) 
+   (<= 0 y (second board-size))
+   (<= 0 x (first board-size))
+   (= "nsew" (get-in @state [:board x y])))) 
 
-(defn create-maze [x, y]
-  (let [start [(rand-int (first board-size)) 
-               (rand-int (second board-size))]
-        path []]
-    (print start)))
+(def directions ["n" "s" "e" "w"])
+
+(defn carve-maze-from [x y]
+  (println "carving from " x y)
+  (doall 
+   (for [direction (clojure.core/shuffle directions)
+         :let [[new_x new_y] (next-cell direction x y)]
+         :when (valid-unvisited-cell? new_x new_y)]
+     (do (remove-wall direction x y)
+         (carve-maze-from new_x new_y)))))
+
 
 (defn can-move? [x y direction]
   (not (str/includes? (get-in @state [:board x y]) direction)))
@@ -163,7 +180,7 @@
 
 (defn init []
   (on-js-reload)
-  (create-maze)
+  (carve-maze-from 2 2)
   (.addEventListener js/document "keydown" handle-keys!))
 
 (defonce start

@@ -84,6 +84,11 @@
         40 (move-character! "s")
         (println key))))
 
+(def mouse {:name "Mouscowitz" 
+            :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}})
+
+;(update-in player1 [:attribs :str] inc)
+
 (defn circle [x y]
   [:circle
    {:r 0.1
@@ -174,13 +179,12 @@
  
 (defn on-js-reload []
   (println "Reloading world.")
-  ;(reset! state)
   (reagent/render-component [warren]
                             (. js/document (getElementById "app"))))
 
 (defn init []
   (on-js-reload)
-  (carve-maze-from 2 2)
+  (apply carve-maze-from initial-position)
   (.addEventListener js/document "keydown" handle-keys!))
 
 (defonce start

@@ -15,6 +15,14 @@
                       :x (first initial-position)
                       :y (second initial-position)}))
 
+(defonce mouse (atom {:name "Mouscowitz" 
+                      :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}
+                      :path []}))
+
+(defn add-to-path [x y]
+  (swap! mouse assoc-in [:path] 
+         (conj (get-in @mouse [:path]) [x y])))
+
 (defn add-to-cell [char x y]
   (swap! state assoc-in [:board x y] 
          (str char (get-in @state [:board x y]))))
@@ -67,11 +75,13 @@
   (let [x (:x @state)
         y (:y @state)]
     (if (can-move? x y direction)
+      (do 
+        (add-to-path x y)
         (case direction
           "n" (swap! state assoc :y (dec y))
           "s" (swap! state assoc :y (inc y))
           "e" (swap! state assoc :x (inc x))
-          "w" (swap! state assoc :x (dec x))))))
+          "w" (swap! state assoc :x (dec x)))))))
 
 (defn handle-keys! [event]
   (let [key (.-keyCode event)]
@@ -83,9 +93,6 @@
         39 (move-character! "e")
         40 (move-character! "s")
         (println key))))
-
-(def mouse {:name "Mouscowitz" 
-            :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}})
 
 ;(update-in player1 [:attribs :str] inc)
 
@@ -130,19 +137,17 @@
           :y1 y
           :y2 (+  y 1)}])
 
+(defn visited? [x y]
+  (let [position [x y]]
+    (filter #(== position) (get-in @mouse [:path]))))
+
 (defn box [x y]
   [:rect
    {:width 1
     :height 1
-    :fill "grey"
+    :fill (if (visited? x y) "grey" "black")
     :x x
     :y y}])
-
-(defn stats []
-  [:div 
-   [:h1 (:text @state)]
-   [:h2 "blue"]
-   [:h1 (:x @state) (:y @state)]])
 
 (defn tile [x y]
   [:g
@@ -159,6 +164,7 @@
         (= x (:x @state))
         (= y (:y @state)))
      (circle x y))])
+
 
 (defn warren []
   [:center

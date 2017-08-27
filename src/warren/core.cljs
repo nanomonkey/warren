@@ -16,12 +16,7 @@
                       :y (second initial-position)}))
 
 (defonce mouse (atom {:name "Mouscowitz" 
-                      :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}
-                      :path []}))
-
-(defn add-to-path [x y]
-  (swap! mouse assoc-in [:path] 
-         (conj (get-in @mouse [:path]) [x y])))
+                      :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}}))
 
 (defn add-to-cell [char x y]
   (swap! state assoc-in [:board x y] 
@@ -76,7 +71,7 @@
         y (:y @state)]
     (if (can-move? x y direction)
       (do 
-        (add-to-path x y)
+        (add-to-cell "v" x y)
         (case direction
           "n" (swap! state assoc :y (dec y))
           "s" (swap! state assoc :y (inc y))
@@ -141,30 +136,30 @@
   (let [position [x y]]
     (filter #(== position) (get-in @mouse [:path]))))
 
-(defn box [x y]
+(defn box [color x y]
   [:rect
    {:width 1
     :height 1
-    :fill (if (visited? x y) "grey" "black")
+    :fill color
     :x x
     :y y}])
 
 (defn tile [x y]
   [:g
-   (box x y)
+   (box "darkgrey" x y)
    (for [letter (seq (get-in @state [:board x y]))]
      (case letter
-         "n" (border-top x y)
-         "s" (border-bottom x y)
-         "w" (border-left x y)
-         "e" (border-right x y)
-         nil))
+       "v" (box "grey" x y)
+       "n" (border-top x y)
+       "s" (border-bottom x y)
+       "w" (border-left x y)
+       "e" (border-right x y)
+       nil))
    (if 
        (and 
         (= x (:x @state))
         (= y (:y @state)))
      (circle x y))])
-
 
 (defn warren []
   [:center

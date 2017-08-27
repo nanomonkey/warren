@@ -18,9 +18,13 @@
 (defonce mouse (atom {:name "Mouscowitz" 
                       :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}}))
 
+(defn in-cell? [char x y]
+  (str/includes? (get-in @state [:board x y]) char))
+
 (defn add-to-cell [char x y]
-  (swap! state assoc-in [:board x y] 
-         (str char (get-in @state [:board x y]))))
+  (if (not (in-cell? char x y))
+    (swap! state assoc-in [:board x y] 
+           (str char (get-in @state [:board x y])))))
 
 (defn remove-from-cell [char x y]
   (swap! state assoc-in [:board x y]
@@ -62,14 +66,10 @@
      (do (remove-wall direction x y)
          (carve-maze-from new_x new_y)))))
 
-
-(defn can-move? [x y direction]
-  (not (str/includes? (get-in @state [:board x y]) direction)))
-
 (defn move-character! [direction]
   (let [x (:x @state)
         y (:y @state)]
-    (if (can-move? x y direction)
+    (if (not (in-cell? direction x y))
       (do 
         (add-to-cell "v" x y)
         (case direction
@@ -88,8 +88,6 @@
         39 (move-character! "e")
         40 (move-character! "s")
         (println key))))
-
-;(update-in player1 [:attribs :str] inc)
 
 (defn circle [x y]
   [:circle
@@ -131,10 +129,6 @@
           :x2 x 
           :y1 y
           :y2 (+  y 1)}])
-
-(defn visited? [x y]
-  (let [position [x y]]
-    (filter #(== position) (get-in @mouse [:path]))))
 
 (defn box [color x y]
   [:rect

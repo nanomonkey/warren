@@ -10,10 +10,15 @@
 (defn blank-board [x y]
   (vec (repeat x (vec (repeat y "nsew")))))
 
+(defn random-location []
+  [(int (rand (first board-size)))
+   (int (rand (second board-size)))])
+
 (defonce state (atom {:text "Welcome to Warren"
                       :board (apply blank-board board-size)
                       :x (first initial-position)
-                      :y (second initial-position)}))
+                      :y (second initial-position)
+                      :carrots (take 5 (repeatedly #(random-location)))}))
 
 (defonce mouse (atom {:name "Mouscowitz" 
                       :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}}))

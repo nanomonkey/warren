@@ -8,7 +8,7 @@
 (defonce initial-position [2 2])
 
 (defn blank-board [x y]
-  (vec (repeat x (vec (repeat y "nsew")))))
+  (vec (repeat x (vec (repeat y #{:n :s :e :w})))))
 
 (defn random-location []
   [(int (rand (first board-size)))
@@ -23,44 +23,44 @@
 (defonce mouse (atom {:name "Mouscowitz" 
                       :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}}))
 
-(defn in-cell? [char x y]
-  (str/includes? (get-in @state [:board x y]) char))
 
-(defn add-to-cell [char x y]
-  (if (not (in-cell? char x y))
-    (swap! state assoc-in [:board x y] 
-           (str char (get-in @state [:board x y])))))
+(defn cell-contains? [key x y]
+  (contains? (get-in @state [:board x y]) key))
 
-(defn remove-from-cell [char x y]
+(defn cell-add! [key x y]
+  (swap! state assoc-in [:board x y] 
+         (conj (get-in @state [:board x y]) key)))
+
+(defn cell-remove! [key x y]
   (swap! state assoc-in [:board x y]
-         (str/join (str/split (get-in @state [:board x y]) char))))
+         (disj (get-in @state [:board x y]) key)))
 
 (defn next-cell [dir x y]
   (case dir
-    "s" [x (+ y 1)]
-    "n" [x (- y 1)]
-    "e" [(+ x 1) y]
-    "w" [(- x 1) y]))
+    :s [x (+ y 1)]
+    :n [x (- y 1)]
+    :e [(+ x 1) y]
+    :w [(- x 1) y]))
 
 (defn opposite-dir [dir]
   (case dir
-    "n" "s"
-    "s" "n"
-    "w" "e"
-    "e" "w"))
+    ":n" ":s"
+    ":s" ":n"
+    ":w" ":e"
+    ":e" ":w"))
 
 (defn remove-wall [dir x y]
-  (remove-from-cell dir x y)
+  (cell-remove! dir x y)
   (let [[nx ny] (next-cell dir x y)]
-    (remove-from-cell (opposite-dir dir) nx ny)))
+    (cell-remove! (opposite-dir dir) nx ny)))
 
 (defn valid-unvisited-cell? [x y]
   (and
    (<= 0 y (second board-size))
    (<= 0 x (first board-size))
-   (= "nsew" (get-in @state [:board x y])))) 
+   (not  (cell-contains? x y :v)))) 
 
-(def directions ["n" "s" "e" "w"])
+(def directions [":n" ":s" ":e" ":w"])
 
 (defn carve-maze-from [x y]
   "Carve out walls for maze using recursive backtracking algorithm"
@@ -69,14 +69,15 @@
          :let [[new_x new_y] (next-cell direction x y)]
          :when (valid-unvisited-cell? new_x new_y)]
      (do (remove-wall direction x y)
+         (cell-remove! x y :u)
          (carve-maze-from new_x new_y)))))
 
 (defn move-character! [direction]
   (let [x (:x @state)
         y (:y @state)]
-    (if (not (in-cell? direction x y))
+    (if (not (cell-contains? direction x y))
       (do 
-        (add-to-cell "v" x y)
+        (cell-add! :v x y)
         (case direction
           "n" (swap! state assoc :y (dec y))
           "s" (swap! state assoc :y (inc y))
@@ -121,11 +122,11 @@
 
 (defn border-right [x y]
   [:line {:stroke "black"
-          :stroke-width 0.1
-          :x1 (+ x 1)
-          :x2 (+ x 1) 
-          :y1 y
-          :y2 (+ y 1)}])
+            :stroke-width 0.1
+            :x1 (+ x 1)
+            :x2 (+ x 1) 
+            :y1 y
+            :y2 (+ y 1)}])
 
 (defn border-left [x y]
   [:line {:stroke "black"
@@ -146,14 +147,12 @@
 (defn tile [x y]
   [:g
    (box "darkgrey" x y)
-   (for [letter (seq (get-in @state [:board x y]))]
-     (case letter
-       "v" (box "grey" x y)
-       "n" (border-top x y)
-       "s" (border-bottom x y)
-       "w" (border-left x y)
-       "e" (border-right x y)
-       nil))
+   (let [cell (get-in @state [:board x y])]
+     (if (contains? cell :v) (box "grey" x y))
+     (if (contains? cell :n) (border-top x y))
+     (if (contains? cell :s) (border-bottom x y))
+     (if (contains? cell :w) (border-left x y))
+     (if (contains? cell :e) (border-right x y)))
    (if 
        (and 
         (= x (:x @state))

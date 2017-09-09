@@ -8,7 +8,7 @@
 (defonce initial-position [2 2])
 
 (defn blank-board [x y]
-  (vec (repeat x (vec (repeat y #{:n :s :e :w})))))
+  (vec (repeat x (vec (repeat y #{:n :s :e :w :u})))))
 
 (defn random-location []
   [(int (rand (first board-size)))
@@ -23,16 +23,19 @@
 (defonce mouse (atom {:name "Mouscowitz" 
                       :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}}))
 
+(defn cell [x y]
+  (get-in @state [:board x y]))
+
 (defn cell-contains? [key x y]
-  (contains? (get-in @state [:board x y]) key))
+  (contains? (cell x y) key))
 
 (defn cell-add! [key x y]
   (swap! state assoc-in [:board x y] 
-         (conj (get-in @state [:board x y]) key)))
+         (conj (cell x y) key)))
 
 (defn cell-remove! [key x y]
   (swap! state assoc-in [:board x y]
-         (disj (get-in @state [:board x y]) key)))
+         (disj (cell x y) key)))
 
 (defn next-cell [dir x y]
   (case dir
@@ -43,21 +46,23 @@
 
 (defn opposite-dir [dir]
   (case dir
-    ":n" ":s"
-    ":s" ":n"
-    ":w" ":e"
-    ":e" ":w"))
+    :n :s
+    :s :n
+    :w :e
+    :e :w))
 
 (defn remove-wall [dir x y]
   (cell-remove! dir x y)
+  (cell-remove! :u x y)
   (let [[nx ny] (next-cell dir x y)]
-    (cell-remove! (opposite-dir dir) nx ny)))
+    (cell-remove! (opposite-dir dir) nx ny)
+    (cell-remove! :u nx ny)))
 
 (defn valid-unvisited-cell? [x y]
   (and
    (<= 0 y (second board-size))
    (<= 0 x (first board-size))
-   (not  (cell-contains? x y :v)))) 
+   (cell-contains? :u x y))) 
  
 (def directions [:n :s :e :w])
 
@@ -68,7 +73,6 @@
          :let [[new_x new_y] (next-cell direction x y)]
          :when (valid-unvisited-cell? new_x new_y)]
      (do (remove-wall direction x y)
-         (cell-remove! x y :u)
          (carve-maze-from new_x new_y)))))
 
 (defn move-character! [direction]
@@ -78,20 +82,20 @@
       (do 
         (cell-add! :v x y)
         (case direction
-          "n" (swap! state assoc :y (dec y))
-          "s" (swap! state assoc :y (inc y))
-          "e" (swap! state assoc :x (inc x))
-          "w" (swap! state assoc :x (dec x)))))))
+          :n (swap! state assoc :y (dec y))
+          :s (swap! state assoc :y (inc y))
+          :e (swap! state assoc :x (inc x))
+          :w (swap! state assoc :x (dec x)))))))
 
 (defn handle-keys! [event]
   (let [key (.-keyCode event)]
     (case key
         32 (println "spacebar")         ; spacebar
         13 (println "enter")            ; enter
-        37 (move-character! "w")
-        38 (move-character! "n")
-        39 (move-character! "e")
-        40 (move-character! "s")
+        37 (move-character! :w)
+        38 (move-character! :n)
+        39 (move-character! :e)
+        40 (move-character! :s)
         (println key))))
 
 (defn circle [x y]

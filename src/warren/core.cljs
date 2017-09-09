@@ -57,12 +57,6 @@
   (let [[nx ny] (next-cell dir x y)]
     (cell-remove! (opposite-dir dir) nx ny)
     (cell-remove! :u nx ny)))
-
-(defn valid-unvisited-cell? [x y]
-  (and
-   (<= 0 y (second board-size))
-   (<= 0 x (first board-size))
-   (cell-contains? :u x y))) 
  
 (def directions [:n :s :e :w])
 
@@ -71,7 +65,7 @@
   (doall 
    (for [direction (clojure.core/shuffle directions)
          :let [[new_x new_y] (next-cell direction x y)]
-         :when (valid-unvisited-cell? new_x new_y)]
+         :when (cell-contains? :u new_x new_y)]
      (do (remove-wall direction x y)
          (carve-maze-from new_x new_y)))))
 
@@ -79,13 +73,10 @@
   (let [x (:x @state)
         y (:y @state)]
     (if (not (cell-contains? direction x y))
-      (do 
-        (cell-add! :v x y)
-        (case direction
-          :n (swap! state assoc :y (dec y))
-          :s (swap! state assoc :y (inc y))
-          :e (swap! state assoc :x (inc x))
-          :w (swap! state assoc :x (dec x)))))))
+      (let [[new_x new_y] (next-cell direction x y)]
+        (cell-add! :v new_x new_y)
+        (swap! state assoc :x new_x)
+        (swap! state assoc :y new_y)))))
 
 (defn handle-keys! [event]
   (let [key (.-keyCode event)]
@@ -186,6 +177,7 @@
 (defn init []
   (on-js-reload)
   (apply carve-maze-from initial-position)
+  (cell-add! :v (first initial-position) (second initial-position))
   (.addEventListener js/document "keydown" handle-keys!))
 
 (defonce start

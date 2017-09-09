@@ -23,7 +23,6 @@
 (defonce mouse (atom {:name "Mouscowitz" 
                       :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}}))
 
-
 (defn cell-contains? [key x y]
   (contains? (get-in @state [:board x y]) key))
 
@@ -59,8 +58,8 @@
    (<= 0 y (second board-size))
    (<= 0 x (first board-size))
    (not  (cell-contains? x y :v)))) 
-
-(def directions [":n" ":s" ":e" ":w"])
+ 
+(def directions [:n :s :e :w])
 
 (defn carve-maze-from [x y]
   "Carve out walls for maze using recursive backtracking algorithm"
@@ -147,12 +146,11 @@
 (defn tile [x y]
   [:g
    (box "darkgrey" x y)
-   (let [cell (get-in @state [:board x y])]
-     (if (contains? cell :v) (box "grey" x y))
-     (if (contains? cell :n) (border-top x y))
-     (if (contains? cell :s) (border-bottom x y))
-     (if (contains? cell :w) (border-left x y))
-     (if (contains? cell :e) (border-right x y)))
+   (if (cell-contains? :v x y) (box "grey" x y)) 
+   (if (cell-contains? :n x y) (border-top x y))
+   (if (cell-contains? :s x y) (border-bottom x y))
+   (if (cell-contains? :e x y) (border-right x y))
+   (if (cell-contains? :w x y) (border-left x y))
    (if 
        (and 
         (= x (:x @state))

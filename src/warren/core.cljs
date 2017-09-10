@@ -20,12 +20,14 @@
                       :y (second initial-position)
                       :mouse {:name "Mouscowitz"
                               :position initial-position
+                              :health 5
                               :attribs {:str 4 
                                         :int 15 
                                         :wis 9 
                                         :dex 16 
                                         :con 6}
-                              :carrots 1}}))
+                              :carrots 1
+                              :rabbits 0}}))
 
 (defn cell [[x y]]
   (get-in @state [:board x y]))
@@ -76,13 +78,36 @@
 (defn add-carrots-to-map! [n]
   (take n (repeatedly (cell-add! :c (random-location)))))
 
+(defn add-ferret-to-map! []
+  (cell-add! :f (random-location)))
+
+(defn add-rabbits-to-map! [n]
+  (take n (repeatedly (cell-add! :r (random-location)))))
+
 (defn found-carrot! [x y]
   (cell-remove! :c [x y])
   (swap! state assoc :text "You found a carrot!")
   (swap! state assoc :mouse :carrots (inc (:mouse :carrots @state))))
 
+(defn found-rabbit! [x y]
+  (cell-remove! :r [x y])
+  (swap! state assoc :text "You found a trapped rabbit. Save it!")
+  (swap! state update-in state [:mouse :rabbits] inc))
+
+(defn found-ferret! []
+  (swap! state assoc :text "The ferret caught you.  You die..."))
+
+(defn eat-carrot! []
+  (if (> (get-in @state :mouse :carrot) 0)
+    (do
+      (swap! state assoc :text "You eat a carrot. Yumm.")
+      (swap! state update-in state [:mouse :carrots] dec)
+      (swap! state update-in state [:mouse :health] inc))))
+
 (defn check-cell [x y]
-  (if (cell-contains? :c [x y]) (found-carrot! x y)))
+  (if (cell-contains? :c [x y]) (found-carrot! x y))
+  (if (cell-contains? :r [x y]) (found-rabbit! x y))
+  (if (cell-contains? :f [x y]) (found-ferret!)))
 
 (defn move-character! [direction]
   (let [x (:x @state)
@@ -98,11 +123,13 @@
   (let [key (.-keyCode event)]
     (case key
         32 (println "spacebar")       
-        13 (println "enter")         
+        13 (println "enter")  
+        69 (eat-carrot!)
         37 (move-character! :w)
         38 (move-character! :n)
         39 (move-character! :e)
-        40 (move-character! :s))))
+        40 (move-character! :s)
+        (println key))))
 
 (defn circle [x y]
   [:circle
@@ -161,18 +188,12 @@
    (if (cell-contains? :s [x y]) (border-bottom x y))
    (if (cell-contains? :e [x y]) (border-right x y))
    (if (cell-contains? :w [x y]) (border-left x y))
-   (if 
-       (and 
-        (= x (:x @state))
-        (= y (:y @state)))
-     (circle x y))])
+   (if (and (= x (:x @state))(= y (:y @state)))(circle x y))])
 
 (defn warren []
   [:center
    [:h1 (:text @state)]
-   (let [x (:x @state)
-        y (:y @state)]
-     [:h2 "X:" x " Y:" y " Tile:" (get-in @state [:board x y])])   
+   [:h2 "Carrots: " (get-in @state [:mouse :carrots])]   
    (into
     [:svg
      {:view-box (str "0 0 "  (first board-size) " " (second board-size))
@@ -194,6 +215,8 @@
   (apply carve-maze-from initial-position)
   (cell-add! :v initial-position)
   (add-carrots-to-map! 5)
+  (add-ferret-to-map!)
+  (add-rabbits-to-map! 4)
   (.addEventListener js/document "keydown" handle-keys!))
 
 (defonce start

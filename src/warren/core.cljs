@@ -18,26 +18,30 @@
                       :board (apply blank-board board-size)
                       :x (first initial-position)
                       :y (second initial-position)
-                      :carrots (take 5 (repeatedly #(random-location)))}))
+                      :mouse {:name "Mouscowitz"
+                              :position initial-position
+                              :attribs {:str 4 
+                                        :int 15 
+                                        :wis 9 
+                                        :dex 16 
+                                        :con 6}
+                              :carrots 1}}))
 
-(defonce mouse (atom {:name "Mouscowitz" 
-                      :attribs {:str 4 :int 15 :wis 9 :dex 16 :con 6}}))
-
-(defn cell [x y]
+(defn cell [[x y]]
   (get-in @state [:board x y]))
 
-(defn cell-contains? [key x y]
-  (contains? (cell x y) key))
+(defn cell-contains? [key pos]
+  (contains? (cell pos) key))
 
-(defn cell-add! [key x y]
+(defn cell-add! [key [x y]]
   (swap! state assoc-in [:board x y] 
-         (conj (cell x y) key)))
+         (conj (cell [x y]) key)))
 
-(defn cell-remove! [key x y]
+(defn cell-remove! [key [x y]]
   (swap! state assoc-in [:board x y]
-         (disj (cell x y) key)))
+         (disj (cell [x y]) key)))
 
-(defn next-cell [dir x y]
+(defn next-cell [dir [x y]]
   (case dir
     :s [x (+ y 1)]
     :n [x (- y 1)]
@@ -51,12 +55,12 @@
     :w :e
     :e :w))
 
-(defn remove-wall [dir x y]
-  (cell-remove! dir x y)
-  (cell-remove! :u x y)
-  (let [[nx ny] (next-cell dir x y)]
-    (cell-remove! (opposite-dir dir) nx ny)
-    (cell-remove! :u nx ny)))
+(defn remove-wall [dir [x y]]
+  (cell-remove! dir [x y])
+  (cell-remove! :u [x y])
+  (let [[nx ny] (next-cell dir [x y])]
+    (cell-remove! (opposite-dir dir) [nx ny])
+    (cell-remove! :u [nx ny])))
  
 (def directions [:n :s :e :w])
 
@@ -64,30 +68,41 @@
   "Carve out walls for maze using recursive backtracking algorithm"
   (doall 
    (for [direction (clojure.core/shuffle directions)
-         :let [[new_x new_y] (next-cell direction x y)]
-         :when (cell-contains? :u new_x new_y)]
-     (do (remove-wall direction x y)
+         :let [[new_x new_y] (next-cell direction [x y])]
+         :when (cell-contains? :u [new_x new_y])]
+     (do (remove-wall direction [x y])
          (carve-maze-from new_x new_y)))))
+
+(defn add-carrots-to-map! [n]
+  (take n (repeatedly (cell-add! :c (random-location)))))
+
+(defn found-carrot! [x y]
+  (cell-remove! :c [x y])
+  (swap! state assoc :text "You found a carrot!")
+  (swap! state assoc :mouse :carrots (inc (:mouse :carrots @state))))
+
+(defn check-cell [x y]
+  (if (cell-contains? :c [x y]) (found-carrot! x y)))
 
 (defn move-character! [direction]
   (let [x (:x @state)
         y (:y @state)]
-    (if (not (cell-contains? direction x y))
-      (let [[new_x new_y] (next-cell direction x y)]
-        (cell-add! :v new_x new_y)
+    (if (not (cell-contains? direction [x y]))
+      (let [[new_x new_y] (next-cell direction [x y])]
+        (cell-add! :v [new_x new_y])
         (swap! state assoc :x new_x)
-        (swap! state assoc :y new_y)))))
+        (swap! state assoc :y new_y)
+        (check-cell new_x new_y)))))
 
 (defn handle-keys! [event]
   (let [key (.-keyCode event)]
     (case key
-        32 (println "spacebar")         ; spacebar
-        13 (println "enter")            ; enter
+        32 (println "spacebar")       
+        13 (println "enter")         
         37 (move-character! :w)
         38 (move-character! :n)
         39 (move-character! :e)
-        40 (move-character! :s)
-        (println key))))
+        40 (move-character! :s))))
 
 (defn circle [x y]
   [:circle
@@ -140,12 +155,12 @@
 
 (defn tile [x y]
   [:g
-   (box "darkgrey" x y)
-   (if (cell-contains? :v x y) (box "grey" x y)) 
-   (if (cell-contains? :n x y) (border-top x y))
-   (if (cell-contains? :s x y) (border-bottom x y))
-   (if (cell-contains? :e x y) (border-right x y))
-   (if (cell-contains? :w x y) (border-left x y))
+   (box "grey" x y)
+   (if (cell-contains? :v [x y]) (box "darkgrey" x y)) 
+   (if (cell-contains? :n [x y]) (border-top x y))
+   (if (cell-contains? :s [x y]) (border-bottom x y))
+   (if (cell-contains? :e [x y]) (border-right x y))
+   (if (cell-contains? :w [x y]) (border-left x y))
    (if 
        (and 
         (= x (:x @state))
@@ -177,7 +192,8 @@
 (defn init []
   (on-js-reload)
   (apply carve-maze-from initial-position)
-  (cell-add! :v (first initial-position) (second initial-position))
+  (cell-add! :v initial-position)
+  (add-carrots-to-map! 5)
   (.addEventListener js/document "keydown" handle-keys!))
 
 (defonce start

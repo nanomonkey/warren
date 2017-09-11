@@ -123,7 +123,7 @@
 (defn dig-mode! []
   (if (> (get-in @state [:mouse :rabbits]) 0)
     (if (js/confirm "Dig?")
-      (conj state :dig))))
+      (swap! state conj :dig))))
 
 (defn dig-mode? []
   (contains? state :dig))
@@ -132,7 +132,7 @@
   (let [x (:x @state)
         y (:y @state)]
     (remove-wall! dir [x y]))
-  (disj state :dig)
+  (swap! state disj :dig)
   (swap! state update-in [:mouse :rabbits] dec)
   (add-rabbits-to-map! 1)
   (js/alert "The rabbit dug through the wall.  And ran away!"))

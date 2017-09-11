@@ -57,7 +57,7 @@
     :w :e
     :e :w))
 
-(defn remove-wall [dir [x y]]
+(defn remove-wall! [dir [x y]]
   (cell-remove! dir [x y])
   (cell-remove! :u [x y])
   (let [[nx ny] (next-cell dir [x y])]
@@ -72,7 +72,7 @@
    (for [direction (clojure.core/shuffle directions)
          :let [[new_x new_y] (next-cell direction [x y])]
          :when (cell-contains? :u [new_x new_y])]
-     (do (remove-wall direction [x y])
+     (do (remove-wall! direction [x y])
          (carve-maze-from new_x new_y)))))
 
 (defn add-carrots-to-map! [n]
@@ -86,23 +86,24 @@
 
 (defn found-carrot! [x y]
   (cell-remove! :c [x y])
-  (swap! state assoc :text "You found a carrot!")
-  (swap! state assoc :mouse :carrots (inc (:mouse :carrots @state))))
+  (js/alert "You found a carrot!")
+  (swap! state update-in [:mouse :carrots] inc))
 
 (defn found-rabbit! [x y]
   (cell-remove! :r [x y])
-  (swap! state assoc :text "You found a trapped rabbit. Save it!")
-  (swap! state update-in state [:mouse :rabbits] inc))
+  (js/alert "You found a trapped rabbit. Save it!")
+  (swap! state update-in [:mouse :rabbits] inc))
 
 (defn found-ferret! []
-  (swap! state assoc :text "The ferret caught you.  You die..."))
+  (js/alert  "The ferret caught you.  You die..."))
 
 (defn eat-carrot! []
-  (if (> (get-in @state :mouse :carrot) 0)
+  (if (> (get-in @state [:mouse :carrots]) 0)
     (do
-      (swap! state assoc :text "You eat a carrot. Yumm.")
-      (swap! state update-in state [:mouse :carrots] dec)
-      (swap! state update-in state [:mouse :health] inc))))
+      (js/alert "You eat a carrot. Yumm.")
+      (swap! state update-in [:mouse :carrots] dec)
+      (swap! state update-in [:mouse :health] inc))
+    (js/alert "You cannot eat carrots you don't have!")))
 
 (defn check-cell [x y]
   (if (cell-contains? :c [x y]) (found-carrot! x y))
@@ -119,12 +120,36 @@
         (swap! state assoc :y new_y)
         (check-cell new_x new_y)))))
 
+(defn dig-mode! []
+  (if (> (get-in @state [:mouse :rabbits]) 0)
+    (if (js/confirm "Dig?")
+      (conj state :dig))))
+
+(defn dig-mode? []
+  (contains? state :dig))
+
+(defn dig! [dir]
+  (let [x (:x @state)
+        y (:y @state)]
+    (remove-wall! dir [x y]))
+  (disj state :dig)
+  (swap! state update-in [:mouse :rabbits] dec)
+  (add-rabbits-to-map! 1)
+  (js/alert "The rabbit dug through the wall.  And ran away!"))
+
 (defn handle-keys! [event]
   (let [key (.-keyCode event)]
+    (if (dig-mode?)
+      (case key
+        37 (dig! :w)
+        38 (dig! :n)
+        39 (dig! :e)
+        40 (dig! :s)))
     (case key
         32 (println "spacebar")       
         13 (println "enter")  
         69 (eat-carrot!)
+        68 (dig-mode!)
         37 (move-character! :w)
         38 (move-character! :n)
         39 (move-character! :e)
@@ -193,7 +218,8 @@
 (defn warren []
   [:center
    [:h1 (:text @state)]
-   [:h2 "Carrots: " (get-in @state [:mouse :carrots])]   
+   [:h2 "Carrots: " (get-in @state [:mouse :carrots]) 
+    "   Rabbits: " (get-in @state [:mouse :rabbits]) "/5"]
    (into
     [:svg
      {:view-box (str "0 0 "  (first board-size) " " (second board-size))

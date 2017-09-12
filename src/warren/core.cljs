@@ -18,6 +18,7 @@
                       :board (apply blank-board board-size)
                       :x (first initial-position)
                       :y (second initial-position)
+                      :digging? false
                       :mouse {:name "Mouscowitz"
                               :position initial-position
                               :health 5
@@ -122,24 +123,23 @@
 
 (defn dig-mode! []
   (if (> (get-in @state [:mouse :rabbits]) 0)
-    (if (js/confirm "Dig?")
-      (swap! state conj :dig))))
+    (if (js/confirm "Start Digging?")
+      (swap! state assoc :digging? true))
+    (js/alert "You can't dig without a rabbit!")))
 
-(defn dig-mode? []
-  (contains? state :dig))
 
 (defn dig! [dir]
   (let [x (:x @state)
         y (:y @state)]
     (remove-wall! dir [x y]))
-  (swap! state disj :dig)
+  (swap! state assoc :digging? false)
   (swap! state update-in [:mouse :rabbits] dec)
   (add-rabbits-to-map! 1)
   (js/alert "The rabbit dug through the wall.  And ran away!"))
 
 (defn handle-keys! [event]
   (let [key (.-keyCode event)]
-    (if (dig-mode?)
+    (if (:digging? @state)
       (case key
         37 (dig! :w)
         38 (dig! :n)

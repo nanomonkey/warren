@@ -95,8 +95,11 @@
   (js/alert "You found a trapped rabbit. Save it!")
   (swap! state update-in [:mouse :rabbits] inc))
 
+(declare init)
+
 (defn found-ferret! []
-  (js/alert  "The ferret caught you.  You die..."))
+  (js/alert  "The ferret caught you.  You die...")
+  (init))
 
 (defn eat-carrot! []
   (if (> (get-in @state [:mouse :carrots]) 0)

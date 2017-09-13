@@ -4,8 +4,12 @@
 
 (enable-console-print!) 
 
+(declare init)
+
 (defonce board-size [30 20])
 (defonce initial-position [2 2])
+(defonce number-of-rabbits 10)
+(defonce number-of-carrots 10)
 
 (defn blank-board [x y]
   (vec (repeat x (vec (repeat y #{:n :s :e :w :u})))))
@@ -94,8 +98,6 @@
   (cell-remove! :r [x y])
   (js/alert "You found a trapped rabbit. Save it!")
   (swap! state update-in [:mouse :rabbits] inc))
-
-(declare init)
 
 (defn found-ferret! []
   (js/alert  "The ferret caught you.  You die...")
@@ -222,7 +224,7 @@
   [:center
    [:h1 (:text @state)]
    [:h2 "Carrots: " (get-in @state [:mouse :carrots]) 
-    "   Rabbits: " (get-in @state [:mouse :rabbits]) "/5"]
+    "   Rabbits: " (get-in @state [:mouse :rabbits]) "/" number-of-rabbits]
    (into
     [:svg
      {:view-box (str "0 0 "  (first board-size) " " (second board-size))
@@ -243,9 +245,9 @@
   (on-js-reload)
   (apply carve-maze-from initial-position)
   (cell-add! :v initial-position)
-  (add-carrots-to-map! 5)
+  (add-carrots-to-map! number-of-carrots)
   (add-ferret-to-map!)
-  (add-rabbits-to-map! 4)
+  (add-rabbits-to-map! number-of-rabbits)
   (.addEventListener js/document "keydown" handle-keys!))
 
 (defonce start

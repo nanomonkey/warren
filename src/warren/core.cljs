@@ -226,9 +226,12 @@
    (if (cell-contains? :s [x y]) (border-bottom x y))
    (if (cell-contains? :e [x y]) (border-right x y))
    (if (cell-contains? :w [x y]) (border-left x y))
-   (if (cell-contains? :c [x y]) (circle "orange" x y))
-   (if (cell-contains? :r [x y]) (circle "brown" x y))
-   (if (cell-contains? :f [x y]) (circle "black" x y))
+   (if (and (cell-contains? :c [x y])
+            (cell-contains? :v [x y])) (circle "orange" x y))
+   (if (and (cell-contains? :r [x y])
+            (cell-contains? :v [x y])) (circle "brown" x y))
+   (if (and (cell-contains? :f [x y])
+            (cell-contains? :v [x y])) (circle "black" x y))
    (if (and (= x (:x @state))(= y (:y @state)))(circle "blue" x y))])
 
 

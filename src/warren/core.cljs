@@ -81,13 +81,13 @@
          (carve-maze-from new_x new_y)))))
 
 (defn add-carrots-to-map! [n]
-  (take n (repeatedly (cell-add! :c (random-location)))))
+  (doall (map #(cell-add! :c %) (repeatedly n #(random-location)))))
 
 (defn add-ferret-to-map! []
   (cell-add! :f (random-location)))
 
 (defn add-rabbits-to-map! [n]
-  (take n (repeatedly (cell-add! :r (random-location)))))
+  (doall (map #(cell-add! :r %) (repeatedly n #(random-location)))))
 
 (defn found-carrot! [x y]
   (cell-remove! :c [x y])
@@ -169,10 +169,10 @@
         40 (move-character! :s)
         (println key))))
 
-(defn circle [x y]
+(defn circle [color x y]
   [:circle
    {:r 0.1
-    :stroke "blue"
+    :stroke color
     :stroke-width 0.5
     :fill "none"
     :cx (+ 0.5 x)
@@ -218,9 +218,6 @@
     :x x
     :y y}])
 
-(defn carrot [x y]
-  )
-
 (defn tile [x y]
   [:g
    (box "grey" x y)
@@ -229,7 +226,10 @@
    (if (cell-contains? :s [x y]) (border-bottom x y))
    (if (cell-contains? :e [x y]) (border-right x y))
    (if (cell-contains? :w [x y]) (border-left x y))
-   (if (and (= x (:x @state))(= y (:y @state)))(circle x y))])
+   (if (cell-contains? :c [x y]) (circle "orange" x y))
+   (if (cell-contains? :r [x y]) (circle "brown" x y))
+   (if (cell-contains? :f [x y]) (circle "black" x y))
+   (if (and (= x (:x @state))(= y (:y @state)))(circle "blue" x y))])
 
 
 (defn warren []
@@ -259,8 +259,8 @@
   (cell-add! :v initial-position)
   (illuminate initial-position)
   (add-carrots-to-map! number-of-carrots)
-  (add-ferret-to-map!)
   (add-rabbits-to-map! number-of-rabbits)
+  (add-ferret-to-map!)
   (.addEventListener js/document "keydown" handle-keys!))
 
 (defonce start

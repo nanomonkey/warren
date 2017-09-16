@@ -116,12 +116,20 @@
   (if (cell-contains? :r [x y]) (found-rabbit! x y))
   (if (cell-contains? :f [x y]) (found-ferret!)))
 
+(defn visible-cells [x y]
+  (map #(next-cell % [x y]) (clojure.set/difference (set directions) 
+                                                    (cell [x y]))))
+
+(defn illuminate [[x y]]
+  (doall (map #(cell-add! :v %) (visible-cells x y))))
+
 (defn move-character! [direction]
   (let [x (:x @state)
         y (:y @state)]
     (if (not (cell-contains? direction [x y]))
       (let [[new_x new_y] (next-cell direction [x y])]
         (cell-add! :v [new_x new_y])
+        (illuminate [new_x new_y])
         (swap! state assoc :x new_x)
         (swap! state assoc :y new_y)
         (check-cell new_x new_y)))))
@@ -171,7 +179,7 @@
     :cy (+ 0.5 y)}])
 
 (defn border-top [x y]
-  [:line {:stroke "black"
+  [:line {:stroke "grey"
           :stroke-width 0.1
           :x1 x
           :x2 (+ x 1) 
@@ -179,7 +187,7 @@
           :y2 y}])
 
 (defn border-bottom [x y]
-  [:line {:stroke "black"
+  [:line {:stroke "grey"
           :stroke-width 0.1
           :x1 (+ x 1) 
           :x2 (+ x 1) 
@@ -187,7 +195,7 @@
           :y2 y}])
 
 (defn border-right [x y]
-  [:line {:stroke "black"
+  [:line {:stroke "grey"
             :stroke-width 0.1
             :x1 (+ x 1)
             :x2 (+ x 1) 
@@ -195,7 +203,7 @@
             :y2 (+ y 1)}])
 
 (defn border-left [x y]
-  [:line {:stroke "black"
+  [:line {:stroke "grey"
           :stroke-width 0.1
           :x1 x
           :x2 x 
@@ -210,6 +218,9 @@
     :x x
     :y y}])
 
+(defn carrot [x y]
+  )
+
 (defn tile [x y]
   [:g
    (box "grey" x y)
@@ -219,6 +230,7 @@
    (if (cell-contains? :e [x y]) (border-right x y))
    (if (cell-contains? :w [x y]) (border-left x y))
    (if (and (= x (:x @state))(= y (:y @state)))(circle x y))])
+
 
 (defn warren []
   [:center
@@ -245,6 +257,7 @@
   (on-js-reload)
   (apply carve-maze-from initial-position)
   (cell-add! :v initial-position)
+  (illuminate initial-position)
   (add-carrots-to-map! number-of-carrots)
   (add-ferret-to-map!)
   (add-rabbits-to-map! number-of-rabbits)

@@ -10,9 +10,10 @@
 (defonce initial-position [2 2])
 (defonce number-of-rabbits 10)
 (defonce number-of-carrots 10)
+(defonce directions #{:n :s :e :w})
 
 (defn blank-board [x y]
-  (vec (repeat x (vec (repeat y #{:n :s :e :w :u})))))
+  (vec (repeat x (vec (repeat y directions)))))
 
 (defn random-location []
   [(int (rand (first board-size)))
@@ -64,19 +65,16 @@
 
 (defn remove-wall! [dir [x y]]
   (cell-remove! dir [x y])
-  (cell-remove! :u [x y])
   (let [[nx ny] (next-cell dir [x y])]
     (cell-remove! (opposite-dir dir) [nx ny])
     (cell-remove! :u [nx ny])))
  
-(def directions [:n :s :e :w])
-
 (defn carve-maze-from [x y]
   "Carve out walls for maze using recursive backtracking algorithm"
   (doall 
    (for [direction (clojure.core/shuffle directions)
          :let [[new_x new_y] (next-cell direction [x y])]
-         :when (cell-contains? :u [new_x new_y])]
+         :when (= (cell [new_x new_y]) directions)]
      (do (remove-wall! direction [x y])
          (carve-maze-from new_x new_y)))))
 
@@ -91,16 +89,20 @@
 
 (defn found-carrot! [x y]
   (cell-remove! :c [x y])
-  (js/alert "You found a carrot!")
+  (js/alert "You found a carrot!n Eat it to keep your health up.")
   (swap! state update-in [:mouse :carrots] inc))
 
 (defn found-rabbit! [x y]
   (cell-remove! :r [x y])
-  (js/alert "You found a trapped rabbit. Save it!")
-  (swap! state update-in [:mouse :rabbits] inc))
+  (js/alert 
+   "You found a trapped rabbit!\n With your nimble hands you set it free.")
+  (swap! state update-in [:mouse :rabbits] inc)
+  (if (= (get-in @state [:mouse :rabbits]) 1)
+    (js/alert "The rabbit says, 'I can help you dig walls!'")))
 
 (defn found-ferret! []
   (js/alert  "The ferret caught you.  You die...")
+  (reset! state)
   (init))
 
 (defn eat-carrot! []
@@ -117,10 +119,10 @@
   (if (cell-contains? :f [x y]) (found-ferret!)))
 
 (defn visible-cells [x y]
-  (map #(next-cell % [x y]) (clojure.set/difference (set directions) 
+  (map #(next-cell % [x y]) (clojure.set/difference  directions 
                                                     (cell [x y]))))
 
-(defn illuminate [[x y]]
+(defn illuminate! [[x y]]
   (doall (map #(cell-add! :v %) (visible-cells x y))))
 
 (defn move-character! [direction]
@@ -129,14 +131,14 @@
     (if (not (cell-contains? direction [x y]))
       (let [[new_x new_y] (next-cell direction [x y])]
         (cell-add! :v [new_x new_y])
-        (illuminate [new_x new_y])
+        (illuminate! [new_x new_y])
         (swap! state assoc :x new_x)
         (swap! state assoc :y new_y)
         (check-cell new_x new_y)))))
 
 (defn dig-mode! []
   (if (> (get-in @state [:mouse :rabbits]) 0)
-    (if (js/confirm "Start Digging?")
+    (if (js/confirm "Start Digging? Select a direction...")
       (swap! state assoc :digging? true))
     (js/alert "You can't dig without a rabbit!")))
 
@@ -260,11 +262,12 @@
   (on-js-reload)
   (apply carve-maze-from initial-position)
   (cell-add! :v initial-position)
-  (illuminate initial-position)
+  (illuminate! initial-position)
   (add-carrots-to-map! number-of-carrots)
   (add-rabbits-to-map! number-of-rabbits)
   (add-ferret-to-map!)
-  (.addEventListener js/document "keydown" handle-keys!))
+  (defonce key-handler (.addEventListener 
+                        js/document "keydown" handle-keys!)))
 
 (defonce start
   (init))

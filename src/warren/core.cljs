@@ -89,7 +89,7 @@
 
 (defn found-carrot! [x y]
   (cell-remove! :c [x y])
-  (js/alert "You found a carrot!n Eat it to keep your health up.")
+  (js/alert "You found a carrot! Eat it to keep your health up.")
   (swap! state update-in [:mouse :carrots] inc))
 
 (defn found-rabbit! [x y]

@@ -1,7 +1,9 @@
 # warren
 
+![Warren](warren_screen_shot.png)
+
 A maze game where you play as a mouse who travels inside a rabbit warren 
-that has been beseiged by a hungry weasel.
+that has been beseiged by a hungry weasel. 
 
 ## Overview
 

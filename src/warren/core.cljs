@@ -1,6 +1,8 @@
 (ns warren.core
   (:require [reagent.core :as reagent :refer [atom]] 
+            [reagent.dom :as rd]
             [clojure.string :as str]))
+
 
 (enable-console-print!) 
 
@@ -19,21 +21,23 @@
   [(int (rand (first board-size)))
    (int (rand (second board-size)))])
 
-(defonce state (atom {:text "Welcome to Warren"
-                      :board (apply blank-board board-size)
-                      :x (first initial-position)
-                      :y (second initial-position)
-                      :digging? false
-                      :mouse {:name "Mouscowitz"
-                              :position initial-position
-                              :health 5
-                              :attribs {:str 4 
-                                        :int 15 
-                                        :wis 9 
-                                        :dex 16 
-                                        :con 6}
-                              :carrots 1
-                              :rabbits 0}}))
+(defn initial-state [] (atom {:text "Welcome to Warren"
+                             :board (apply blank-board board-size)
+                             :x (first initial-position)
+                             :y (second initial-position)
+                             :digging? false
+                             :mouse {:name "Mouscowitz"
+                                     :position initial-position
+                                     :health 5
+                                     :attribs {:str 4 
+                                               :int 15 
+                                               :wis 9 
+                                               :dex 16 
+                                               :con 6}
+                                     :carrots 1
+                                     :rabbits 0}}))
+
+(defonce state (initial-state))
 
 (defn cell [[x y]]
   (get-in @state [:board x y]))
@@ -102,7 +106,7 @@
 
 (defn found-ferret! []
   (js/alert  "The ferret caught you.  You die...")
-  (reset! state)
+  (reset! state (initial-state))
   (init))
 
 (defn eat-carrot! []
@@ -255,11 +259,9 @@
  
 (defn on-js-reload []
   (println "Reloading world.")
-  (reagent/render-component [warren]
-                            (. js/document (getElementById "app"))))
+  (rd/render [warren] (.getElementById js/document "app")))
 
 (defn init []
-  (on-js-reload)
   (apply carve-maze-from initial-position)
   (cell-add! :v initial-position)
   (illuminate! initial-position)
@@ -270,4 +272,6 @@
                         js/document "keydown" handle-keys!)))
 
 (defonce start
-  (init))
+  (do 
+    (on-js-reload)
+    (init)))
